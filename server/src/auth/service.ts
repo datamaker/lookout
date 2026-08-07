@@ -70,6 +70,23 @@ export async function verifyToken(token: string): Promise<AuthUser | null> {
   return rows[0];
 }
 
+/** Short-lived signed blob for the OIDC state/verifier round-trip cookie. */
+export function signOidcState(payload: { state: string; verifier: string }): string {
+  if (!jwtSecret) throw new Error('auth not initialized');
+  return jwt.sign(payload, jwtSecret, { expiresIn: '10m' });
+}
+
+export function verifyOidcState(token: string): { state: string; verifier: string } | null {
+  if (!jwtSecret) return null;
+  try {
+    const p = jwt.verify(token, jwtSecret) as jwt.JwtPayload;
+    if (typeof p.state !== 'string' || typeof p.verifier !== 'string') return null;
+    return { state: p.state, verifier: p.verifier };
+  } catch {
+    return null;
+  }
+}
+
 export async function countUsers(): Promise<number> {
   const { rows } = await query<{ count: string }>('SELECT COUNT(*) AS count FROM users');
   return parseInt(rows[0].count, 10);

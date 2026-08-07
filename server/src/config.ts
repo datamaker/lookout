@@ -8,6 +8,10 @@ export const config = {
   retentionDays: parseInt(process.env.LOOKOUT_RETENTION_DAYS ?? '90', 10),
   /** Public base URL, used to build DSNs and links in alerts, e.g. https://lookout.example.com */
   publicUrl: (process.env.LOOKOUT_PUBLIC_URL ?? '').replace(/\/$/, ''),
+  /** OIDC SSO (optional): issuer of the internal IdP, e.g. https://auth.datasee.co.kr/oidc */
+  oidcIssuer: (process.env.OIDC_ISSUER ?? '').replace(/\/$/, ''),
+  oidcClientId: process.env.OIDC_CLIENT_ID ?? 'lookout',
+  oidcClientSecret: process.env.OIDC_CLIENT_SECRET ?? '',
 };
 
 export function baseUrl(): string {

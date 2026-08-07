@@ -3,10 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import { config } from './config.js';
 import { migrate } from './db/migrate.js';
 import { initAuth } from './auth/service.js';
+import { initOidc } from './auth/oidc.js';
 import { registerIngestRoutes } from './routes/ingest.js';
 import { registerApiRoutes } from './routes/api.js';
 import { registerAuthRoutes, registerUserRoutes } from './routes/auth.js';
@@ -17,6 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function main(): Promise<void> {
   await migrate();
   await initAuth();
+  await initOidc();
 
   const app = Fastify({
     logger: { level: process.env.LOG_LEVEL ?? 'info' },
@@ -24,6 +27,7 @@ async function main(): Promise<void> {
   });
 
   await app.register(cors, { origin: true });
+  await app.register(cookie);
 
   registerIngestRoutes(app);
   registerAuthRoutes(app);

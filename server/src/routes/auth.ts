@@ -1,14 +1,19 @@
+import { randomBytes } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { query } from '../db/pool.js';
 import {
   countUsers,
   hashPassword,
   publicUser,
+  signOidcState,
   signToken,
+  verifyOidcState,
   verifyPassword,
   verifyToken,
   type AuthUser,
 } from '../auth/service.js';
+import { buildAuthUrl, handleCallback, oidcEnabled } from '../auth/oidc.js';
+import { baseUrl } from '../config.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -85,6 +90,58 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       return reply.code(401).send({ error: 'invalid email or password' });
     }
     return { token: signToken(user), user: publicUser(user) };
+  });
+
+  /** Public: is SSO configured? (login page shows the button) */
+  app.get('/api/auth/oidc/status', async () => ({ enabled: oidcEnabled() }));
+
+  app.get('/api/auth/oidc/start', async (_req, reply) => {
+    if (!oidcEnabled()) return reply.code(404).send({ error: 'sso not configured' });
+    const { url, state, codeVerifier } = await buildAuthUrl();
+    return reply
+      .setCookie('lookout_oidc', signOidcState({ state, verifier: codeVerifier }), {
+        path: '/api/auth/oidc',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: baseUrl().startsWith('https://'),
+        maxAge: 600,
+      })
+      .redirect(url);
+  });
+
+  app.get('/api/auth/oidc/callback', async (req, reply) => {
+    if (!oidcEnabled()) return reply.code(404).send({ error: 'sso not configured' });
+    const stored = req.cookies.lookout_oidc ? verifyOidcState(req.cookies.lookout_oidc) : null;
+    reply.clearCookie('lookout_oidc', { path: '/api/auth/oidc' });
+    if (!stored) return reply.code(400).send({ error: 'sso flow expired; start again' });
+
+    let identity;
+    try {
+      identity = await handleCallback(new URL(req.url, baseUrl()), stored.state, stored.verifier);
+    } catch (err) {
+      req.log.warn({ err }, 'oidc callback failed');
+      return reply.code(403).send({ error: 'sso sign-in failed' });
+    }
+
+    let { rows } = await query<AuthUser>(
+      `SELECT id, email, name, role, is_active FROM users WHERE email = $1`,
+      [identity.email],
+    );
+    if (rows.length === 0) {
+      // JIT provisioning: the IdP already vouched for this workspace member.
+      // Password login stays possible only via an admin-set password later.
+      const role = (await countUsers()) === 0 ? 'admin' : 'member';
+      ({ rows } = await query<AuthUser>(
+        `INSERT INTO users (email, name, password_hash, role)
+         VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, is_active`,
+        [identity.email, identity.name, await hashPassword(randomBytes(24).toString('base64url')), role],
+      ));
+    }
+    const user = rows[0];
+    if (!user.is_active) return reply.code(403).send({ error: 'account is deactivated' });
+
+    // The SPA login page picks the token out of the URL hash.
+    return reply.redirect(`/login#sso=${signToken(user)}`);
   });
 
   app.get('/api/auth/me', async (req, reply) => {

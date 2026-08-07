@@ -152,6 +152,12 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .login-box h1 span { color: var(--accent); }
 .login-box input { width: 100%; }
 .error-text { color: var(--red); font-size: 13px; }
+.sso-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: inherit;
+}
+.sso-button:hover { border-color: var(--accent); }
 
 .chart { display: flex; align-items: flex-end; gap: 2px; height: 64px; padding: 12px 16px 8px; }
 .chart .bar {

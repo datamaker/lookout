@@ -7,12 +7,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [ssoEnabled, setSsoEnabled] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // SSO callback delivers the token in the URL hash.
+    const match = window.location.hash.match(/^#sso=(.+)$/);
+    if (match) {
+      const token = match[1];
+      window.history.replaceState(null, '', '/login');
+      void fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error('sso token rejected'))))
+        .then(({ user }: { user: CurrentUser }) => {
+          setAuth(token, user);
+          navigate('/', { replace: true });
+        })
+        .catch(() => setError('SSO sign-in failed'));
+      return;
+    }
     void api<{ needsSetup: boolean }>('/api/auth/status').then(({ needsSetup }) => {
       if (needsSetup) navigate('/setup', { replace: true });
     });
+    void api<{ enabled: boolean }>('/api/auth/oidc/status')
+      .then(({ enabled }) => setSsoEnabled(enabled))
+      .catch(() => {});
   }, [navigate]);
 
   async function submit(e: React.FormEvent) {
@@ -53,6 +71,17 @@ export default function LoginPage() {
       />
       {error && <div className="error-text">{error}</div>}
       <button disabled={busy || !email || !password}>Sign in</button>
+      {ssoEnabled && (
+        <button
+          type="button"
+          className="sso-button"
+          onClick={() => {
+            window.location.href = '/api/auth/oidc/start';
+          }}
+        >
+          Datasee SSO로 로그인
+        </button>
+      )}
     </form>
   );
 }
