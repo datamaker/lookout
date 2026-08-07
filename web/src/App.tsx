@@ -7,6 +7,7 @@ import IssuesPage from './pages/IssuesPage';
 import IssueDetailPage from './pages/IssueDetailPage';
 import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
+import AccountPage from './pages/AccountPage';
 
 function Shell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -20,7 +21,9 @@ function Shell({ children }: { children: React.ReactNode }) {
         </Link>
         <div className="spacer" />
         {isAdmin() && <Link to="/users">Members</Link>}
-        <span className="dim">{user?.name}</span>
+        <Link to="/account" className="dim">
+          {user?.name}
+        </Link>
         <button
           className="secondary"
           onClick={() => {
@@ -46,6 +49,7 @@ export default function App() {
       <Route path="/projects/:projectId/settings" element={<Shell><SettingsPage /></Shell>} />
       <Route path="/issues/:issueId" element={<Shell><IssueDetailPage /></Shell>} />
       <Route path="/users" element={<Shell><UsersPage /></Shell>} />
+      <Route path="/account" element={<Shell><AccountPage /></Shell>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -13,14 +13,17 @@ export interface Project {
 export async function storeEvent(project: Project, raw: SentryEvent): Promise<string> {
   const event = normalizeEvent(raw);
 
-  const prev = await query<{ id: number; status: string }>(
-    'SELECT id, status FROM issues WHERE project_id = $1 AND fingerprint = $2',
+  // Atomic regression detection: with concurrent events for the same resolved
+  // issue, exactly one of them wins this UPDATE, so the webhook fires once.
+  const reopened = await query<{ id: number }>(
+    `UPDATE issues SET status = 'unresolved'
+     WHERE project_id = $1 AND fingerprint = $2 AND status = 'resolved'
+     RETURNING id`,
     [project.id, event.fingerprint],
   );
-  const isNew = prev.rows.length === 0;
-  const isRegression = !isNew && prev.rows[0].status === 'resolved';
+  const isRegression = (reopened.rowCount ?? 0) > 0;
 
-  const upsert = await query<{ id: number }>(
+  const upsert = await query<{ id: number; is_new: boolean }>(
     `INSERT INTO issues (project_id, fingerprint, title, culprit, level, event_count, first_seen, last_seen)
      VALUES ($1, $2, $3, $4, $5, 1, $6, $6)
      ON CONFLICT (project_id, fingerprint) DO UPDATE SET
@@ -28,12 +31,12 @@ export async function storeEvent(project: Project, raw: SentryEvent): Promise<st
        last_seen   = GREATEST(issues.last_seen, EXCLUDED.last_seen),
        title       = EXCLUDED.title,
        culprit     = EXCLUDED.culprit,
-       level       = EXCLUDED.level,
-       status      = CASE WHEN issues.status = 'resolved' THEN 'unresolved' ELSE issues.status END
-     RETURNING id`,
+       level       = EXCLUDED.level
+     RETURNING id, (xmax = 0) AS is_new`,
     [project.id, event.fingerprint, event.title, event.culprit, event.level, event.timestamp],
   );
   const issueId = upsert.rows[0].id;
+  const isNew = upsert.rows[0].is_new;
 
   await query(
     `INSERT INTO events (id, project_id, issue_id, timestamp, level, message, environment, release, payload)
