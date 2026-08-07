@@ -73,4 +73,4 @@ Performance tracing, session replay, source map processing, multi-user/teams, SS
 
 ## License
 
-MIT © Datasee
+MIT © JungBin Kwon
