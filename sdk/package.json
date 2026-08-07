@@ -1,0 +1,44 @@
+{
+  "name": "lookout-node",
+  "version": "0.1.0",
+  "description": "Tiny zero-dependency Node.js SDK for lookout, the self-hosted Sentry-compatible error tracker",
+  "keywords": [
+    "error-tracking",
+    "error-monitoring",
+    "sentry",
+    "self-hosted",
+    "lookout"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/datamaker/lookout.git",
+    "directory": "sdk"
+  },
+  "homepage": "https://github.com/datamaker/lookout#readme",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && tsc -p tsconfig.types.json && node -e \"require('fs').writeFileSync('dist/esm/package.json', JSON.stringify({type:'module'}))\"",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "typescript": "^5.5.4"
+  }
+}

@@ -31,6 +31,22 @@ Sentry.init({
 
 That's it — `Sentry.captureException(err)` and unhandled errors now land in lookout.
 
+## No Sentry SDK? Use lookout-node
+
+If you'd rather not pull in the full Sentry SDK, [`lookout-node`](https://www.npmjs.com/package/lookout-node) is a zero-dependency client (~6 kB) that lives in [`sdk/`](sdk/):
+
+```bash
+npm install lookout-node
+```
+
+```js
+const lookout = require('lookout-node');
+lookout.init({ dsn: 'http://<public-key>@localhost:9000/1' });
+lookout.captureException(new Error('boom'));
+```
+
+Uncaught exceptions and unhandled rejections are captured automatically; breadcrumbs, tags, user context, source context lines, and an Express error handler are included. See [sdk/README.md](sdk/README.md).
+
 ## Configuration
 
 | Env var | Default | Description |

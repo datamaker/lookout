@@ -5,7 +5,8 @@
   "description": "Self-hosted, Sentry-compatible error tracking. Point your existing @sentry/node DSN at it and go.",
   "workspaces": [
     "server",
-    "web"
+    "web",
+    "sdk"
   ],
   "scripts": {
     "dev": "npm run dev -w server",
