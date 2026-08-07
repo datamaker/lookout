@@ -1,6 +1,15 @@
 # HANDOFF
 
-## 상태 (2026-08-07)
+## 상태 v0.2 (2026-08-07 오후)
+
+멤버관리 추가 완료 + 배포 준비:
+
+- **인증 개편**: 어드민 비밀번호 → users 테이블(bcrypt 12r) + 7일 JWT. JWT 시크릿은 미설정 시 자동생성해 settings 테이블에 영속. 첫 방문 시 `/setup`에서 어드민 계정 생성.
+- **역할**: admin(프로젝트/웹훅/멤버 관리), member(이슈 조회·트리아지). 12개 권한 시나리오 API 검증 + 브라우저 UI 검증 완료. 자기 강등/비활성화 차단.
+- **@sentry/node v10 호환 확인**: bioweekly-backend가 쓰는 v10.55.0으로 withScope+setExtra+captureException 패턴 검증 — extra/stacktrace 정상 수집.
+- **배포 준비**: docker-compose.hub.yml + scripts/docker-build-push.sh (datamaker/lookout, linux/amd64). 대상 서버는 cacheby-app EC2(i-02a25fbfe333be1f8, SSM 접속) — /opt/<서비스> 컨벤션, 포트 9000 비어 있음. bioweekly-backend는 같은 VPC private 서브넷 Lambda라 private IP로 도달 가능(SG 9000 인바운드 필요).
+
+## 상태 v0.1 (2026-08-07 오전)
 
 v0.1 동작 확인 완료. `@sentry/node@7.66.0`으로 실제 이벤트를 보내 end-to-end 검증했다:
 
