@@ -1,0 +1,15 @@
+# Dev dependencies only — run the server itself with `npm run dev`.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lookout
+      POSTGRES_PASSWORD: lookout
+      POSTGRES_DB: lookout
+    ports:
+      - '5434:5432'
+    volumes:
+      - lookout-pgdata-dev:/var/lib/postgresql/data
+
+volumes:
+  lookout-pgdata-dev:

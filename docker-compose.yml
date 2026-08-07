@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lookout
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lookout}
+      POSTGRES_DB: lookout
+    volumes:
+      - lookout-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lookout']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  lookout:
+    build: .
+    ports:
+      - '${PORT:-9000}:9000'
+    environment:
+      DATABASE_URL: postgres://lookout:${POSTGRES_PASSWORD:-lookout}@postgres:5432/lookout
+      LOOKOUT_ADMIN_PASSWORD: ${LOOKOUT_ADMIN_PASSWORD:-lookout}
+      LOOKOUT_PUBLIC_URL: ${LOOKOUT_PUBLIC_URL:-}
+      LOOKOUT_RETENTION_DAYS: ${LOOKOUT_RETENTION_DAYS:-90}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  lookout-pgdata:
