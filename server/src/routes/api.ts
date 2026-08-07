@@ -1,33 +1,14 @@
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { baseUrl, config } from '../config.js';
+import { randomUUID } from 'node:crypto';
+import type { FastifyInstance } from 'fastify';
+import { baseUrl } from '../config.js';
 import { query } from '../db/pool.js';
+import { requireAdmin, requireUser } from './auth.js';
 
 /**
- * Dashboard API. Single-admin auth: POST /api/auth/login with the admin
- * password returns a stateless HMAC token that all other routes require as
- * `Authorization: Bearer <token>`.
+ * Dashboard API. All routes require a logged-in user (JWT Bearer token from
+ * /api/auth/login); project create/update/delete additionally require the
+ * admin role. Issue triage (resolve/ignore) is open to members.
  */
-
-function adminToken(): string {
-  return createHmac('sha256', config.adminPassword).update('lookout-admin-v1').digest('hex');
-}
-
-function safeEqual(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
-}
-
-function requireAuth(req: FastifyRequest, reply: FastifyReply): boolean {
-  const header = req.headers.authorization ?? '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-  if (!token || !safeEqual(token, adminToken())) {
-    reply.code(401).send({ error: 'unauthorized' });
-    return false;
-  }
-  return true;
-}
 
 function dsnFor(projectId: number, publicKey: string): string {
   const url = new URL(baseUrl());
@@ -43,20 +24,13 @@ function slugify(name: string): string {
 }
 
 export function registerApiRoutes(app: FastifyInstance): void {
-  app.post('/api/auth/login', async (req, reply) => {
-    const { password } = (req.body ?? {}) as { password?: string };
-    if (!password || !safeEqual(password, config.adminPassword)) {
-      return reply.code(401).send({ error: 'wrong password' });
-    }
-    return { token: adminToken() };
-  });
-
   app.addHook('preHandler', async (req, reply) => {
     if (!req.url.startsWith('/api/')) return;
-    if (req.url.startsWith('/api/auth/')) return;
+    // Auth and user-management routes handle authorization themselves.
+    if (req.url.startsWith('/api/auth/') || req.url.startsWith('/api/users')) return;
     // Ingest endpoints authenticate with the DSN key instead.
     if (/^\/api\/\d+\/(envelope|store)\//.test(req.url)) return;
-    if (!requireAuth(req, reply)) return reply;
+    if (!(await requireUser(req, reply))) return reply;
   });
 
   app.get('/api/projects', async () => {
@@ -74,6 +48,7 @@ export function registerApiRoutes(app: FastifyInstance): void {
   });
 
   app.post('/api/projects', async (req, reply) => {
+    if (!requireAdmin(req, reply)) return reply;
     const { name } = (req.body ?? {}) as { name?: string };
     if (!name?.trim()) return reply.code(400).send({ error: 'name is required' });
     const publicKey = randomUUID().replace(/-/g, '');
@@ -86,6 +61,7 @@ export function registerApiRoutes(app: FastifyInstance): void {
   });
 
   app.patch('/api/projects/:id', async (req, reply) => {
+    if (!requireAdmin(req, reply)) return reply;
     const id = parseInt((req.params as { id: string }).id, 10);
     const { name, webhookUrl } = (req.body ?? {}) as { name?: string; webhookUrl?: string | null };
     const { rows } = await query(
@@ -101,6 +77,7 @@ export function registerApiRoutes(app: FastifyInstance): void {
   });
 
   app.delete('/api/projects/:id', async (req, reply) => {
+    if (!requireAdmin(req, reply)) return reply;
     const id = parseInt((req.params as { id: string }).id, 10);
     await query('DELETE FROM projects WHERE id = $1', [id]);
     return reply.code(204).send();

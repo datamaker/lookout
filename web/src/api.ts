@@ -1,15 +1,38 @@
 const TOKEN_KEY = 'lookout_token';
+const USER_KEY = 'lookout_user';
+
+export interface CurrentUser {
+  id: number;
+  email: string;
+  name: string;
+  role: 'admin' | 'member';
+}
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-export function setToken(token: string): void {
+export function getUser(): CurrentUser | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as CurrentUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isAdmin(): boolean {
+  return getUser()?.role === 'admin';
+}
+
+export function setAuth(token: string, user: CurrentUser): void {
   localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
 }
 
 export class ApiError extends Error {
@@ -91,4 +114,13 @@ export interface EventDetail extends EventSummary {
 export interface StatsBucket {
   bucket: string;
   count: number;
+}
+
+export interface UserRow {
+  id: number;
+  email: string;
+  name: string;
+  role: 'admin' | 'member';
+  is_active: boolean;
+  created_at: string;
 }

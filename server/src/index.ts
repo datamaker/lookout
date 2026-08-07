@@ -6,14 +6,17 @@ import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import { config } from './config.js';
 import { migrate } from './db/migrate.js';
+import { initAuth } from './auth/service.js';
 import { registerIngestRoutes } from './routes/ingest.js';
 import { registerApiRoutes } from './routes/api.js';
+import { registerAuthRoutes, registerUserRoutes } from './routes/auth.js';
 import { startRetentionLoop } from './retention.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function main(): Promise<void> {
   await migrate();
+  await initAuth();
 
   const app = Fastify({
     logger: { level: process.env.LOG_LEVEL ?? 'info' },
@@ -23,6 +26,8 @@ async function main(): Promise<void> {
   await app.register(cors, { origin: true });
 
   registerIngestRoutes(app);
+  registerAuthRoutes(app);
+  registerUserRoutes(app);
   registerApiRoutes(app);
 
   app.get('/healthz', async () => ({ ok: true }));
@@ -38,12 +43,6 @@ async function main(): Promise<void> {
       }
       return reply.code(404).send({ error: 'not found' });
     });
-  }
-
-  if (config.adminPassword === 'lookout') {
-    app.log.warn(
-      'LOOKOUT_ADMIN_PASSWORD is not set — dashboard password is the default "lookout". Set it before exposing this server.',
-    );
   }
 
   startRetentionLoop();

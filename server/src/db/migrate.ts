@@ -44,6 +44,25 @@ const migrations: { name: string; sql: string }[] = [
       CREATE INDEX events_project_ts ON events (project_id, timestamp DESC);
     `,
   },
+  {
+    name: '002_users',
+    sql: `
+      CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `,
+  },
 ];
 
 export async function migrate(): Promise<void> {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, type Project } from '../api';
+import { api, isAdmin, type Project } from '../api';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[] | null>(null);
@@ -34,14 +34,16 @@ export default function ProjectsPage() {
   return (
     <>
       <h1 className="page-title">Projects</h1>
-      <form className="toolbar" onSubmit={create}>
-        <input
-          placeholder="New project name…"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button disabled={creating || !name.trim()}>Create project</button>
-      </form>
+      {isAdmin() && (
+        <form className="toolbar" onSubmit={create}>
+          <input
+            placeholder="New project name…"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <button disabled={creating || !name.trim()}>Create project</button>
+        </form>
+      )}
       <div className="panel">
         {projects === null ? (
           <div className="empty">Loading…</div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, type Project } from '../api';
+import { api, isAdmin, type Project } from '../api';
 
 export default function SettingsPage() {
   const { projectId } = useParams();
@@ -84,17 +84,24 @@ Sentry.init({
             placeholder="https://hooks.slack.com/services/…"
             value={webhookUrl}
             onChange={(e) => setWebhookUrl(e.target.value)}
+            disabled={!isAdmin()}
           />
-          <button onClick={save}>{saved ? 'Saved!' : 'Save'}</button>
+          <button onClick={save} disabled={!isAdmin()}>
+            {saved ? 'Saved!' : 'Save'}
+          </button>
         </div>
       </div>
 
-      <div className="section-title">Danger zone</div>
-      <div className="panel" style={{ padding: 16 }}>
-        <button className="danger" onClick={remove}>
-          Delete project
-        </button>
-      </div>
+      {isAdmin() && (
+        <>
+          <div className="section-title">Danger zone</div>
+          <div className="panel" style={{ padding: 16 }}>
+            <button className="danger" onClick={remove}>
+              Delete project
+            </button>
+          </div>
+        </>
+      )}
     </>
   );
 }

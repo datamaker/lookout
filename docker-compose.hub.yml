@@ -1,6 +1,12 @@
+# Easy installation using the pre-built Docker Hub image (no build step).
+#
+# Usage:
+#   docker compose -f docker-compose.hub.yml up -d
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: lookout-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: lookout
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lookout}
@@ -14,7 +20,9 @@ services:
       retries: 10
 
   lookout:
-    build: .
+    image: datamaker/lookout:latest
+    container_name: lookout
+    restart: unless-stopped
     ports:
       - '${PORT:-9000}:9000'
     environment:
@@ -24,7 +32,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
 
 volumes:
   lookout-pgdata:

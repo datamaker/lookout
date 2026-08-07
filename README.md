@@ -15,10 +15,10 @@ Your services already use `@sentry/node`? **Change one line (the DSN) and errors
 ```bash
 git clone https://github.com/datamaker/lookout.git
 cd lookout
-LOOKOUT_ADMIN_PASSWORD=change-me docker compose up -d --build
+docker compose up -d --build
 ```
 
-Open http://localhost:9000, sign in with the admin password, create a project, and copy its DSN into your app:
+Open http://localhost:9000 — the first visit walks you through creating the admin account. Then create a project and copy its DSN into your app:
 
 ```js
 const Sentry = require('@sentry/node');
@@ -53,7 +53,7 @@ Uncaught exceptions and unhandled rejections are captured automatically; breadcr
 | --- | --- | --- |
 | `PORT` | `9000` | HTTP port |
 | `DATABASE_URL` | `postgres://lookout:lookout@localhost:5434/lookout` | PostgreSQL connection string |
-| `LOOKOUT_ADMIN_PASSWORD` | `lookout` | Dashboard password. **Set this.** |
+| `JWT_SECRET` | *(auto-generated, persisted in DB)* | Session token signing secret. Set it only if you rotate DBs. |
 | `LOOKOUT_PUBLIC_URL` | *(empty)* | Public base URL, used for DSNs shown in the UI and links in alerts, e.g. `https://lookout.example.com` |
 | `LOOKOUT_RETENTION_DAYS` | `90` | Raw events older than this are deleted hourly. Issues are kept. |
 
@@ -81,7 +81,7 @@ npm run dev:web    # Vite dev server on :5180, proxies /api
 
 - **Grouping**: default fingerprint is `sha256(exception type + (module:function) of up to 8 innermost in-app frames)`. Custom `fingerprint` arrays on the event are respected, including `{{ default }}`.
 - **Regressions**: an event arriving for a `resolved` issue reopens it and fires the webhook again.
-- **Auth model**: single admin password for the dashboard; ingestion is authenticated per-project by DSN key. This is deliberately simple — put it behind your VPN or add a reverse-proxy auth layer if you need more.
+- **Auth model**: email/password accounts with two roles — `admin` (manage projects, webhooks, members) and `member` (view and triage issues). The first visit creates the admin account; admins add members from the dashboard. Sessions are 7-day JWTs (bcrypt-hashed passwords). Ingestion is authenticated per-project by DSN key, independent of user accounts.
 
 ## Non-goals (for now)
 
