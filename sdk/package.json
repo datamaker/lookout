@@ -1,6 +1,9 @@
 {
-  "name": "lookout-node",
+  "name": "@datasee/lookout",
   "version": "0.1.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Tiny zero-dependency Node.js SDK for lookout, the self-hosted Sentry-compatible error tracker",
   "keywords": [
     "error-tracking",

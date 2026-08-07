@@ -1,4 +1,4 @@
-# lookout-node
+# @datasee/lookout
 
 Tiny zero-dependency Node.js SDK for [lookout](https://github.com/datamaker/lookout), the self-hosted Sentry-compatible error tracker. It speaks the Sentry envelope protocol, so it works against any Sentry-compatible backend.
 
@@ -7,13 +7,13 @@ If your app already uses `@sentry/node`, you don't need this — just point your
 ## Install
 
 ```bash
-npm install lookout-node
+npm install @datasee/lookout
 ```
 
 ## Usage
 
 ```js
-const lookout = require('lookout-node'); // or: import * as lookout from 'lookout-node'
+const lookout = require('@datasee/lookout'); // or: import * as lookout from '@datasee/lookout'
 
 lookout.init({
   dsn: 'http://<public-key>@lookout.example.com:9000/1',

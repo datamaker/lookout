@@ -31,16 +31,16 @@ Sentry.init({
 
 That's it — `Sentry.captureException(err)` and unhandled errors now land in lookout.
 
-## No Sentry SDK? Use lookout-node
+## No Sentry SDK? Use @datasee/lookout
 
-If you'd rather not pull in the full Sentry SDK, [`lookout-node`](https://www.npmjs.com/package/lookout-node) is a zero-dependency client (~6 kB) that lives in [`sdk/`](sdk/):
+If you'd rather not pull in the full Sentry SDK, [`@datasee/lookout`](https://www.npmjs.com/package/@datasee/lookout) is a zero-dependency client (~6 kB) that lives in [`sdk/`](sdk/):
 
 ```bash
-npm install lookout-node
+npm install @datasee/lookout
 ```
 
 ```js
-const lookout = require('lookout-node');
+const lookout = require('@datasee/lookout');
 lookout.init({ dsn: 'http://<public-key>@localhost:9000/1' });
 lookout.captureException(new Error('boom'));
 ```

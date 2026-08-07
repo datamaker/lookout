@@ -9,7 +9,7 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { hostname } from 'node:os';
 
-const SDK_NAME = 'lookout-node';
+const SDK_NAME = '@datasee/lookout';
 const SDK_VERSION = '0.1.0';
 
 // ---------------------------------------------------------------------------
