@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { hostname } from 'node:os';
 
 const SDK_NAME = '@datasee/lookout';
-const SDK_VERSION = '0.1.0';
+const SDK_VERSION = '0.2.0';
 
 // ---------------------------------------------------------------------------
 // Types

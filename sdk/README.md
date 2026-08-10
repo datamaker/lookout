@@ -42,6 +42,17 @@ app.use(lookout.expressErrorHandler());
 await lookout.flush(2000);
 ```
 
+## Zero-code AWS Lambda instrumentation
+
+No handler changes needed — set two environment variables (e.g. in `serverless.yml` `provider.environment`) and every function in the service reports errors:
+
+```yaml
+NODE_OPTIONS: -r @datasee/lookout/auto
+LOOKOUT_DSN: https://<public-key>@lookout.example.com/<projectId>
+```
+
+The preload module wraps the handler referenced by `_HANDLER` before the Lambda runtime loads it: thrown errors are reported (with `functionName`, `awsRequestId`, EventBridge `source`/`detail-type`), flushed, and rethrown, so retry/DLQ semantics are preserved. It activates only when `LOOKOUT_DSN` is set and `NODE_ENV=production`; otherwise it is a no-op. CommonJS handlers only (`exports.handler = …`). Optional: `LOOKOUT_ENVIRONMENT` overrides the environment tag (falls back to `STAGE`, then `NODE_ENV`).
+
 ## Options
 
 | Option | Default | Description |
