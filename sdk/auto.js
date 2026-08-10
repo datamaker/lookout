@@ -11,8 +11,11 @@
  * wrapped version in the module cache for the runtime to pick up. Retry/DLQ
  * semantics are preserved because the original error is rethrown.
  *
- * Activation requires LOOKOUT_DSN and NODE_ENV=production; otherwise this
- * module is a no-op, so it is safe to set NODE_OPTIONS unconditionally.
+ * Activation requires LOOKOUT_DSN; without it this module is a no-op, so it
+ * is safe to set NODE_OPTIONS unconditionally. Setting the DSN is the opt-in
+ * (per stage, via deploy env), which keeps pre-prod stages able to exercise
+ * the wrapper before prod. Set LOOKOUT_DISABLED=1 to force off with the DSN
+ * still present.
  */
 'use strict';
 
@@ -55,7 +58,7 @@ function instrument() {
   const dsn = process.env.LOOKOUT_DSN;
   const handlerRef = process.env._HANDLER;
   if (!dsn || !handlerRef) return;
-  if (process.env.NODE_ENV !== 'production') return;
+  if (process.env.LOOKOUT_DISABLED) return;
 
   // "_HANDLER" looks like "src/consumers/jobEventConsumer.handler":
   // everything after the last dot is the export name.
