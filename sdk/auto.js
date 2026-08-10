@@ -25,6 +25,9 @@ function log(msg) {
 }
 
 function wrap(handler) {
+  // Exactly two declared params: the Node.js 24+ runtime treats any handler
+  // with a third (callback) param as callback-based and refuses to init
+  // (Runtime.CallbackHandlerDeprecated), even if the function is async.
   return async function lookoutWrappedHandler(event, context) {
     try {
       return await handler(event, context);
