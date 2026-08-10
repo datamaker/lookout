@@ -25,9 +25,9 @@ function log(msg) {
 }
 
 function wrap(handler) {
-  return async function lookoutWrappedHandler(event, context, callback) {
+  return async function lookoutWrappedHandler(event, context) {
     try {
-      return await handler(event, context, callback);
+      return await handler(event, context);
     } catch (err) {
       try {
         lookout.captureException(err, {
