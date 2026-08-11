@@ -6,7 +6,7 @@ Your services already use `@sentry/node`? **Change one line (the DSN) and errors
 
 - **Sentry SDK compatible** — speaks the Sentry envelope protocol (`/api/<project>/envelope/`) and the legacy store endpoint. Tested with `@sentry/node` v7.
 - **Issue grouping** — events are fingerprinted by exception type + stack frames (line-number agnostic, so redeploys don't split issues) and grouped into issues with first/last seen and counts.
-- **Web dashboard** — issue list with search and status tabs, stack trace viewer with source context, breadcrumbs, tags, event history, 24h frequency chart.
+- **Web dashboard** — issue list with search and status tabs, stack trace viewer with source context, breadcrumbs, tags, event history, 24h frequency chart. Works on a phone: triage from bed without pinch-zooming.
 - **Webhook alerts** — new issues and regressions post Slack-compatible JSON to a per-project webhook.
 - **Boring stack** — Node + Fastify + PostgreSQL. One container plus Postgres.
 

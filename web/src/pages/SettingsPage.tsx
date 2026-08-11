@@ -78,9 +78,8 @@ Sentry.init({
           New issues and regressions are posted as Slack-compatible <code>{'{ text }'}</code>{' '}
           JSON. Works with Slack incoming webhooks and most chat tools.
         </p>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="field-row">
           <input
-            style={{ flex: 1 }}
             placeholder="https://hooks.slack.com/services/…"
             value={webhookUrl}
             onChange={(e) => setWebhookUrl(e.target.value)}
