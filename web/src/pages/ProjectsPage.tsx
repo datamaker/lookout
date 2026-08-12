@@ -56,17 +56,17 @@ export default function ProjectsPage() {
               className="row clickable"
               onClick={() => navigate(`/projects/${p.id}`)}
             >
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>{p.name}</div>
-                <div className="dim mono">{p.slug}</div>
+              <div className="grow">
+                <div className="list-title">{p.name}</div>
+                <div className="dim mono wrap-anywhere">{p.slug}</div>
               </div>
-              <div className="dim">{p.events_24h} events / 24h</div>
-              <div>
+              <div className="row-actions project-meta">
+                <span className="dim">{p.events_24h} events / 24h</span>
                 <span className="badge error">{p.unresolved_count} open</span>
+                <Link to={`/projects/${p.id}/settings`} onClick={(e) => e.stopPropagation()}>
+                  Settings
+                </Link>
               </div>
-              <Link to={`/projects/${p.id}/settings`} onClick={(e) => e.stopPropagation()}>
-                Settings
-              </Link>
             </div>
           ))
         )}

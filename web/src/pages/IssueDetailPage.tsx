@@ -119,30 +119,38 @@ export default function IssueDetailPage() {
         <span style={{ flex: 1, wordBreak: 'break-word' }}>{issue.title}</span>
       </h1>
       <div className="toolbar">
-        <span className={`badge ${issue.status === 'unresolved' ? issue.level : issue.status}`}>
-          {issue.status}
-        </span>
-        <span className="dim">
-          {issue.event_count} events · first {timeAgo(issue.first_seen)} · last{' '}
-          {timeAgo(issue.last_seen)}
-        </span>
-        <span style={{ flex: 1 }} />
-        {issue.status !== 'resolved' && (
-          <button onClick={() => setStatus('resolved')}>Resolve</button>
-        )}
-        {issue.status !== 'ignored' && (
-          <button className="secondary" onClick={() => setStatus('ignored')}>
-            Ignore
-          </button>
-        )}
-        {issue.status !== 'unresolved' && (
-          <button className="secondary" onClick={() => setStatus('unresolved')}>
-            Reopen
-          </button>
-        )}
+        <div className="row-actions">
+          <span className={`badge ${issue.status === 'unresolved' ? issue.level : issue.status}`}>
+            {issue.status}
+          </span>
+          <span className="dim">
+            {issue.event_count} events · first {timeAgo(issue.first_seen)} · last{' '}
+            {timeAgo(issue.last_seen)}
+          </span>
+        </div>
+        <span className="spacer" />
+        <div className="row-actions">
+          {issue.status !== 'resolved' && (
+            <button onClick={() => setStatus('resolved')}>Resolve</button>
+          )}
+          {issue.status !== 'ignored' && (
+            <button className="secondary" onClick={() => setStatus('ignored')}>
+              Ignore
+            </button>
+          )}
+          {issue.status !== 'unresolved' && (
+            <button className="secondary" onClick={() => setStatus('unresolved')}>
+              Reopen
+            </button>
+          )}
+        </div>
       </div>
 
-      {issue.culprit && <div className="dim mono" style={{ marginBottom: 16 }}>{issue.culprit}</div>}
+      {issue.culprit && (
+        <div className="dim mono wrap-anywhere" style={{ marginBottom: 16 }}>
+          {issue.culprit}
+        </div>
+      )}
 
       {primary && (
         <>
@@ -204,11 +212,9 @@ export default function IssueDetailPage() {
           <div className="section-title">Breadcrumbs</div>
           <div className="panel">
             {breadcrumbs.slice(-20).map((b, i) => (
-              <div key={i} className="row">
-                <span className="dim mono" style={{ width: 90 }}>
-                  {b.category ?? b.type ?? '—'}
-                </span>
-                <span style={{ flex: 1 }}>{b.message ?? ''}</span>
+              <div key={i} className="row crumb-row">
+                <span className="dim mono crumb-cat">{b.category ?? b.type ?? '—'}</span>
+                <span className="grow crumb-msg">{b.message ?? ''}</span>
                 {b.level && <span className={`badge ${b.level}`}>{b.level}</span>}
               </div>
             ))}
@@ -219,12 +225,12 @@ export default function IssueDetailPage() {
       <div className="section-title">Recent events</div>
       <div className="panel">
         {events.map((e) => (
-          <div key={e.id} className="row">
+          <div key={e.id} className="row event-row">
             <span className="mono dim">{e.id.slice(0, 8)}</span>
-            <span style={{ flex: 1 }} className="dim">
+            <span className="grow dim event-env">
               {e.environment ?? ''} {e.release ? `· ${e.release}` : ''}
             </span>
-            <span className="dim">{new Date(e.timestamp).toLocaleString()}</span>
+            <span className="dim event-time">{new Date(e.timestamp).toLocaleString()}</span>
           </div>
         ))}
       </div>

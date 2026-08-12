@@ -71,8 +71,8 @@ export default function IssuesPage() {
       </div>
       <h1 className="page-title">
         Issues
-        <span style={{ flex: 1 }} />
-        <Link to={`/projects/${projectId}/settings`} className="dim" style={{ fontSize: 13 }}>
+        <span className="spacer" />
+        <Link to={`/projects/${projectId}/settings`} className="dim title-link">
           Settings
         </Link>
       </h1>
@@ -111,20 +111,11 @@ export default function IssuesPage() {
               onClick={() => navigate(`/issues/${issue.id}`)}
             >
               <span className={`badge ${issue.level}`}>{issue.level}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontWeight: 600,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {issue.title}
-                </div>
-                <div className="dim mono">{issue.culprit ?? '—'}</div>
+              <div className="grow">
+                <div className="list-title">{issue.title}</div>
+                <div className="dim mono wrap-anywhere">{issue.culprit ?? '—'}</div>
               </div>
-              <div className="dim" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+              <div className="dim list-meta">
                 <div>{issue.event_count} events</div>
                 <div>{timeAgo(issue.last_seen)}</div>
               </div>

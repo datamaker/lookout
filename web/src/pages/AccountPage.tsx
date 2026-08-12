@@ -54,7 +54,7 @@ export default function AccountPage() {
       </div>
 
       <div className="section-title">Change password</div>
-      <form className="panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 420 }} onSubmit={submit}>
+      <form className="panel form-column" onSubmit={submit}>
         <input
           type="password"
           placeholder="Current password"

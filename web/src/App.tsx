@@ -21,7 +21,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </Link>
         <div className="spacer" />
         {isAdmin() && <Link to="/users">Members</Link>}
-        <Link to="/account" className="dim">
+        <Link to="/account" className="dim topbar-user">
           {user?.name}
         </Link>
         <button

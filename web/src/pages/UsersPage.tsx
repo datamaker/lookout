@@ -95,17 +95,19 @@ export default function UsersPage() {
         ) : (
           users.map((u) => (
             <div key={u.id} className="row">
-              <div style={{ flex: 1 }}>
+              <div className="grow">
                 <div style={{ fontWeight: 600 }}>
                   {u.name} {u.id === me?.id && <span className="dim">(you)</span>}
                 </div>
-                <div className="dim">{u.email}</div>
+                <div className="dim wrap-anywhere">{u.email}</div>
               </div>
-              {!u.is_active && <span className="badge ignored">deactivated</span>}
-              <span className={`badge ${u.role === 'admin' ? 'error' : 'info'}`}>{u.role}</span>
-              <span className="dim">{timeAgo(u.created_at)}</span>
+              <div className="row-actions user-meta">
+                {!u.is_active && <span className="badge ignored">deactivated</span>}
+                <span className={`badge ${u.role === 'admin' ? 'error' : 'info'}`}>{u.role}</span>
+                <span className="dim">{timeAgo(u.created_at)}</span>
+              </div>
               {u.id !== me?.id && (
-                <>
+                <div className="row-actions user-buttons">
                   <button
                     className="secondary"
                     onClick={() => patch(u.id, { role: u.role === 'admin' ? 'member' : 'admin' })}
@@ -124,7 +126,7 @@ export default function UsersPage() {
                   <button className="danger" onClick={() => remove(u)}>
                     Delete
                   </button>
-                </>
+                </div>
               )}
             </div>
           ))
