@@ -2,6 +2,7 @@ import { gunzipSync, inflateSync } from 'node:zlib';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { query } from '../db/pool.js';
 import { parseEnvelope } from '../ingest/envelope.js';
+import { checkRate, MAX_EVENTS_PER_ENVELOPE } from '../ingest/rateLimit.js';
 import { storeEvent, type Project } from '../ingest/store.js';
 import type { SentryEvent } from '../ingest/event.js';
 
@@ -64,9 +65,28 @@ export function registerIngestRoutes(app: FastifyInstance): void {
       return reply.code(400).send({ error: 'malformed envelope' });
     }
 
+    // Cap events per envelope, then rate-limit per project. Ingest authenticates
+    // by a DSN key that is effectively public, so without these one client can
+    // flood the events table unbounded (DoS). SDKs honor 429 + Retry-After.
+    const eventItems = envelope.items.filter((i) => i.header.type === 'event');
+    const accepted = eventItems.slice(0, MAX_EVENTS_PER_ENVELOPE);
+    if (eventItems.length > accepted.length) {
+      req.log.warn(
+        { projectId, dropped: eventItems.length - accepted.length },
+        'envelope exceeded per-envelope event cap; extra events dropped',
+      );
+    }
+
+    const rate = checkRate(project.id, accepted.length || 1);
+    if (!rate.allowed) {
+      return reply
+        .code(429)
+        .header('Retry-After', String(rate.retryAfterSec))
+        .send({ error: 'rate limited' });
+    }
+
     let lastEventId: string | null = null;
-    for (const item of envelope.items) {
-      if (item.header.type !== 'event') continue; // transactions/sessions/etc: accepted, dropped
+    for (const item of accepted) {
       try {
         const event = JSON.parse(item.payload.toString('utf8')) as SentryEvent;
         lastEventId = await storeEvent(project, event);
@@ -82,6 +102,14 @@ export function registerIngestRoutes(app: FastifyInstance): void {
     const { projectId } = req.params as { projectId: string };
     const project = await authenticateProject(req, projectId);
     if (!project) return reply.code(401).send({ error: 'invalid DSN key or project' });
+
+    const rate = checkRate(project.id);
+    if (!rate.allowed) {
+      return reply
+        .code(429)
+        .header('Retry-After', String(rate.retryAfterSec))
+        .send({ error: 'rate limited' });
+    }
 
     try {
       const body = req.body;
