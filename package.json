@@ -6,7 +6,8 @@
   "workspaces": [
     "server",
     "web",
-    "sdk"
+    "sdk",
+    "cli"
   ],
   "scripts": {
     "dev": "npm run dev -w server",

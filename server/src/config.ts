@@ -12,6 +12,8 @@ export const config = {
   oidcIssuer: (process.env.OIDC_ISSUER ?? '').replace(/\/$/, ''),
   oidcClientId: process.env.OIDC_CLIENT_ID ?? 'lookout',
   oidcClientSecret: process.env.OIDC_CLIENT_SECRET ?? '',
+  /** Separate public client for the CLI's device flow (audience of its id_tokens). */
+  oidcCliClientId: process.env.OIDC_CLI_CLIENT_ID ?? 'lookout-cli',
 };
 
 export function baseUrl(): string {

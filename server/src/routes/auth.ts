@@ -12,7 +12,15 @@ import {
   verifyToken,
   type AuthUser,
 } from '../auth/service.js';
-import { buildAuthUrl, handleCallback, oidcEnabled } from '../auth/oidc.js';
+import {
+  buildAuthUrl,
+  cliClientId,
+  handleCallback,
+  oidcEnabled,
+  verifyCliIdToken,
+  type OidcIdentity,
+} from '../auth/oidc.js';
+import { config } from '../config.js';
 import { baseUrl } from '../config.js';
 
 declare module 'fastify' {
@@ -47,6 +55,27 @@ export function requireAdmin(req: FastifyRequest, reply: FastifyReply): boolean 
     return false;
   }
   return true;
+}
+
+/**
+ * JIT provisioning shared by the web callback and the CLI exchange: the IdP
+ * already vouched for this workspace member. Password login stays possible
+ * only via an admin-set password later.
+ */
+async function provisionSsoUser(identity: OidcIdentity): Promise<AuthUser> {
+  let { rows } = await query<AuthUser>(
+    `SELECT id, email, name, role, is_active FROM users WHERE email = $1`,
+    [identity.email],
+  );
+  if (rows.length === 0) {
+    const role = (await countUsers()) === 0 ? 'admin' : 'member';
+    ({ rows } = await query<AuthUser>(
+      `INSERT INTO users (email, name, password_hash, role)
+       VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, is_active`,
+      [identity.email, identity.name, await hashPassword(randomBytes(24).toString('base64url')), role],
+    ));
+  }
+  return rows[0];
 }
 
 export function registerAuthRoutes(app: FastifyInstance): void {
@@ -92,8 +121,37 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     return { token: signToken(user), user: publicUser(user) };
   });
 
-  /** Public: is SSO configured? (login page shows the button) */
-  app.get('/api/auth/oidc/status', async () => ({ enabled: oidcEnabled() }));
+  /**
+   * Public: is SSO configured? The login page shows the button; issuer +
+   * cliClientId let the CLI run the device flow without local config.
+   */
+  app.get('/api/auth/oidc/status', async () => ({
+    enabled: oidcEnabled(),
+    ...(oidcEnabled() ? { issuer: config.oidcIssuer, cliClientId: cliClientId() } : {}),
+  }));
+
+  /**
+   * CLI SSO: the CLI completed the device flow against the IdP and hands us
+   * the id_token. Verify it (JWKS signature, issuer, CLI audience) and issue
+   * a lookout JWT, JIT-provisioning the user like the web callback does.
+   */
+  app.post('/api/auth/oidc/exchange', async (req, reply) => {
+    if (!oidcEnabled()) return reply.code(404).send({ error: 'sso not configured' });
+    const { idToken } = (req.body ?? {}) as { idToken?: string };
+    if (!idToken) return reply.code(400).send({ error: 'idToken is required' });
+
+    let identity: OidcIdentity;
+    try {
+      identity = await verifyCliIdToken(idToken);
+    } catch (err) {
+      req.log.warn({ err }, 'cli sso exchange failed');
+      return reply.code(403).send({ error: 'sso sign-in failed' });
+    }
+
+    const user = await provisionSsoUser(identity);
+    if (!user.is_active) return reply.code(403).send({ error: 'account is deactivated' });
+    return { token: signToken(user), user: publicUser(user) };
+  });
 
   app.get('/api/auth/oidc/start', async (_req, reply) => {
     if (!oidcEnabled()) return reply.code(404).send({ error: 'sso not configured' });
@@ -123,21 +181,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       return reply.code(403).send({ error: 'sso sign-in failed' });
     }
 
-    let { rows } = await query<AuthUser>(
-      `SELECT id, email, name, role, is_active FROM users WHERE email = $1`,
-      [identity.email],
-    );
-    if (rows.length === 0) {
-      // JIT provisioning: the IdP already vouched for this workspace member.
-      // Password login stays possible only via an admin-set password later.
-      const role = (await countUsers()) === 0 ? 'admin' : 'member';
-      ({ rows } = await query<AuthUser>(
-        `INSERT INTO users (email, name, password_hash, role)
-         VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, is_active`,
-        [identity.email, identity.name, await hashPassword(randomBytes(24).toString('base64url')), role],
-      ));
-    }
-    const user = rows[0];
+    const user = await provisionSsoUser(identity);
     if (!user.is_active) return reply.code(403).send({ error: 'account is deactivated' });
 
     // The SPA login page picks the token out of the URL hash.
