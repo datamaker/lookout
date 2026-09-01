@@ -4,6 +4,7 @@ COPY package.json package-lock.json ./
 COPY server/package.json server/
 COPY web/package.json web/
 COPY sdk/package.json sdk/
+COPY cli/package.json cli/
 RUN npm ci
 COPY server server
 COPY web web
@@ -16,6 +17,7 @@ COPY package.json package-lock.json ./
 COPY server/package.json server/
 COPY web/package.json web/
 COPY sdk/package.json sdk/
+COPY cli/package.json cli/
 RUN npm ci --omit=dev --workspace server && npm cache clean --force
 COPY --from=build /app/server/dist server/dist
 COPY --from=build /app/web/dist web/dist
