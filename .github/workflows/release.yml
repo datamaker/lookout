@@ -2,7 +2,7 @@ name: Release
 
 # v1.2.3 형태의 태그를 푸시하면:
 #   1. Docker Hub 에 이미지 push (latest + 버전 태그)
-#   2. npm 에 SDK(@datasee/lookout)·CLI(@datasee/lookout-cli) 스테이징 —
+#   2. npm 에 SDK(@datasee/lookout)·CLI(@datasee/lookout-cli) publish —
 #      Trusted Publishing(OIDC), 토큰 없음.
 #      공개되려면 npmjs.com 에서 사람이 승인해야 한다.
 #   3. GitHub Release 생성
@@ -72,16 +72,16 @@ jobs:
           node-version: 24
           cache: npm
           registry-url: https://registry.npmjs.org
-      # 스테이징은 npm 11.15.0+, Node 22.14+ 가 필요하다. node 24 가 11.19 를
-      # 달고 오지만 러너 이미지에 끌려다니지 않게 못박는다.
-      - run: npm i -g npm@^11.15.0
+      # Trusted publishing 은 npm 11.5.1+, Node 22.14+ 가 필요하다.
+      # 러너 이미지에 끌려다니지 않게 못박는다.
+      - run: npm i -g npm@^11.5.1
       - run: npm ci
       - name: Build ${{ matrix.pkg }}
         run: npm run build -w ${{ matrix.pkg }}
-      # 바로 공개하지 않고 스테이징까지만 한다. 사람이 npmjs.com 의
-      # Staged Packages 에서 승인해야(2FA) 실제로 배포된다 — 워크플로가 털려도
-      # 레지스트리로 곧장 나가지 못한다.
-      - name: Stage ${{ matrix.pkg }}
+      # npmjs.com 의 trusted publisher 에서 "Allow npm publish" 를 켜 두었으므로
+      # 승인 단계 없이 바로 공개된다. 사람이 막아 주는 단계가 없으니, 이 워크플로를
+      # 돌릴 수 있는 사람은 곧 npm 에 배포할 수 있는 사람이다.
+      - name: Publish ${{ matrix.pkg }}
         working-directory: ${{ matrix.dir }}
         run: |
           npm --version
@@ -90,8 +90,8 @@ jobs:
           if [ "$LOCAL" = "$REMOTE" ]; then
             echo "${{ matrix.pkg }}@$LOCAL 는 이미 올라가 있습니다 — 건너뜁니다."
           else
-            npm stage publish --access public
-            echo "::notice::${{ matrix.pkg }}@$LOCAL 를 스테이징했습니다. npmjs.com 에서 승인해야 공개됩니다."
+            npm publish --access public
+            echo "::notice::${{ matrix.pkg }}@$LOCAL 를 발행했습니다."
           fi
 
   release:
