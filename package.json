@@ -1,6 +1,6 @@
 {
   "name": "lookout",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Self-hosted, Sentry-compatible error tracking. Point your existing @sentry/node DSN at it and go.",
   "workspaces": [
