@@ -7,13 +7,14 @@ import { eventsCommand, issueCommand, issuesCommand, setStatusCommand } from './
 import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
 import { mcpCommand, mcpInstallCommand } from './commands/mcp.js';
 import { linkCommand, projectsCommand } from './commands/projects.js';
+import { VERSION } from './version.js';
 
 const program = new Command();
 
 program
   .name('lookout')
   .description('CLI for lookout — self-hosted, Sentry-compatible error tracking')
-  .version('0.2.0');
+  .version(VERSION);
 
 program
   .command('login')
