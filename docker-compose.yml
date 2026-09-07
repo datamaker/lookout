@@ -12,6 +12,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    # DB 가 죽으면 앱도 같이 멈춘다 — 재시작 정책을 반드시 건다.
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: '20m', max-file: '5' }
 
   lookout:
     build: .
@@ -21,10 +26,16 @@ services:
       DATABASE_URL: postgres://lookout:${POSTGRES_PASSWORD:-lookout}@postgres:5432/lookout
       LOOKOUT_PUBLIC_URL: ${LOOKOUT_PUBLIC_URL:-}
       LOOKOUT_RETENTION_DAYS: ${LOOKOUT_RETENTION_DAYS:-90}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: '20m', max-file: '5' }
 
 volumes:
   lookout-pgdata:
