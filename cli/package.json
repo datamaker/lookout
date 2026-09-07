@@ -28,7 +28,7 @@
   "author": "Jungbin Kwon <datamaker@datasee.co.kr>",
   "type": "module",
   "bin": {
-    "lookout": "./dist/index.js"
+    "lookout": "dist/index.js"
   },
   "files": [
     "dist",
