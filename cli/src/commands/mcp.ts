@@ -4,6 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { api, resolveProject, type IssueStatus } from '../api.js';
 import { describeIssue } from '../format.js';
+import { VERSION } from '../version.js';
 
 /**
  * `lookout mcp` — expose lookout as an MCP stdio server so Claude Code (or
@@ -19,7 +20,7 @@ function text(data: unknown): { content: { type: 'text'; text: string }[] } {
 }
 
 export async function mcpCommand(): Promise<void> {
-  const server = new McpServer({ name: 'lookout', version: '0.2.0' });
+  const server = new McpServer({ name: 'lookout', version: VERSION });
 
   server.tool(
     'list_projects',
