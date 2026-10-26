@@ -36,14 +36,14 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && tsc -p tsconfig.types.json && node -e \"require('fs').writeFileSync('dist/esm/package.json', JSON.stringify({type:'module'}))\"",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@types/node": "^20.14.12",
+    "@types/node": "^24.19.2",
     "typescript": "^5.5.4"
   }
 }
