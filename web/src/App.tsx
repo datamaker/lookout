@@ -28,7 +28,8 @@ function Shell({ children }: { children: React.ReactNode }) {
           className="secondary"
           onClick={() => {
             clearToken();
-            navigate('/login');
+            // local=1 keeps the login page from bouncing straight back through SSO
+            navigate('/login?local=1');
           }}
         >
           Log out
