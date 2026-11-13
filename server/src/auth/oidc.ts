@@ -96,6 +96,9 @@ export async function handleCallback(
   });
   const claims = tokens.claims();
   if (!claims?.email) throw new Error('no email claim in ID token');
+  // CLI 교환(verifyCliIdToken)과 같은 기준: IdP 가 확인한 이메일만 계정에 연결한다.
+  // 확인 안 된 이메일을 받아 주면 남의 주소를 적어 낸 계정으로 로그인될 수 있다.
+  if (claims.email_verified !== true) throw new Error('sso identity has no verified email');
   return {
     email: String(claims.email).toLowerCase(),
     name: String(claims.name ?? claims.email),

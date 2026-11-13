@@ -21,6 +21,7 @@ import {
   type OidcIdentity,
 } from '../auth/oidc.js';
 import { config } from '../config.js';
+import { createLoginLimiter } from '../auth/loginLimiter.js';
 import { baseUrl } from '../config.js';
 
 declare module 'fastify' {
@@ -28,6 +29,13 @@ declare module 'fastify' {
     user: AuthUser | null;
   }
 }
+
+// 비밀번호 로그인 시도 제한 (IP 별·이메일별).
+const loginLimiter = createLoginLimiter({
+  maxPerEmail: config.loginMaxFailuresPerEmail,
+  maxPerIp: config.loginMaxFailuresPerIp,
+  lockoutMs: config.loginLockoutMinutes * 60_000,
+});
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -110,7 +118,20 @@ export function registerAuthRoutes(app: FastifyInstance): void {
 
   app.post('/api/auth/login', async (req, reply) => {
     const { email, password } = (req.body ?? {}) as { email?: string; password?: string };
-    if (!email || !password) return reply.code(400).send({ error: 'email and password required' });
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+      return reply.code(400).send({ error: 'email and password required' });
+    }
+
+    // 무차별 대입 방어: 잠겨 있으면 비밀번호 비교(bcrypt)도 하지 않고 돌려보낸다.
+    // 계정이 있는지와 무관하게 같은 응답이라 계정 존재 여부는 드러나지 않는다.
+    const wait = loginLimiter.consume(req.ip, email);
+    if (wait > 0) {
+      req.log.warn({ ip: req.ip }, 'login temporarily locked (too many failed attempts)');
+      return reply
+        .code(429)
+        .header('Retry-After', String(wait))
+        .send({ error: 'too many login attempts; try again later' });
+    }
 
     const { rows } = await query<AuthUser & { password_hash: string }>(
       `SELECT id, email, name, role, is_active, password_hash FROM users WHERE email = $1`,
@@ -120,6 +141,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     if (!user || !user.is_active || !(await verifyPassword(password, user.password_hash))) {
       return reply.code(401).send({ error: 'invalid email or password' });
     }
+    loginLimiter.success(req.ip, email);
     return { token: signToken(user), user: publicUser(user) };
   });
 
@@ -152,7 +174,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
 
     const user = await provisionSsoUser(identity);
     if (!user.is_active) return reply.code(403).send({ error: 'account is deactivated' });
-    return { token: signToken(user), user: publicUser(user) };
+    return { token: signToken(user, { sso: true }), user: publicUser(user) };
   });
 
   app.get('/api/auth/oidc/start', async (_req, reply) => {
@@ -187,7 +209,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     if (!user.is_active) return reply.code(403).send({ error: 'account is deactivated' });
 
     // The SPA login page picks the token out of the URL hash.
-    return reply.redirect(`/login#sso=${signToken(user)}`);
+    return reply.redirect(`/login#sso=${signToken(user, { sso: true })}`);
   });
 
   app.get('/api/auth/me', async (req, reply) => {

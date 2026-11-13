@@ -24,6 +24,12 @@ services:
       - '${PORT:-9000}:9000'
     environment:
       DATABASE_URL: postgres://lookout:${POSTGRES_PASSWORD:-lookout}@postgres:5432/lookout
+      # nginx 한 홉 뒤에서 돈다 — 안 주면 로그인 잠금·한도가 전부 프록시 IP 하나로 묶인다.
+      LOOKOUT_TRUST_PROXY: ${LOOKOUT_TRUST_PROXY:-}
+      LOOKOUT_WEBHOOK_ALLOWED_HOSTS: ${LOOKOUT_WEBHOOK_ALLOWED_HOSTS:-}
+      # gatehouse 계정 상태 조회(회수 전파). 둘 다 있어야 켜진다.
+      GATEHOUSE_STATUS_URL: ${GATEHOUSE_STATUS_URL:-}
+      GATEHOUSE_STATUS_SECRET: ${GATEHOUSE_STATUS_SECRET:-}
       LOOKOUT_PUBLIC_URL: ${LOOKOUT_PUBLIC_URL:-}
       LOOKOUT_RETENTION_DAYS: ${LOOKOUT_RETENTION_DAYS:-90}
       OIDC_ISSUER: ${OIDC_ISSUER:-}

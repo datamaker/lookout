@@ -6,6 +6,7 @@ import fastifyStatic from '@fastify/static';
 import { registerIngestRoutes } from './routes/ingest.js';
 import { registerApiRoutes } from './routes/api.js';
 import { registerAuthRoutes, registerUserRoutes } from './routes/auth.js';
+import { config } from './config.js';
 import { isApiPath, registerAuthGate } from './auth/gate.js';
 
 export interface BuildAppOptions {
@@ -22,7 +23,12 @@ export interface BuildAppOptions {
 export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({
     logger: opts.logger ?? false,
-    bodyLimit: 20 * 1024 * 1024,
+    // 전역 본문 한도는 대시보드 API(작은 JSON) 기준. 수집 라우트는 routes/ingest.ts 에서
+    // 따로 정한다(INGEST_MAX_BODY_BYTES). 예전에는 전체가 20 MB 였다.
+    bodyLimit: 1024 * 1024,
+    // 프록시(nginx) 뒤에서 실제 클라이언트 IP 를 얻기 위한 설정. 로그인 시도 제한이
+    // IP 별로 동작하려면 필요하다. 프록시가 없으면 비워 둔다(X-Forwarded-For 를 믿지 않음).
+    trustProxy: config.trustProxy,
     // 기본값(true)이면 라우터가 경로를 ';' 에서 잘라 버린다.
     // "/api/projects;x/../../healthz" 같은 요청이 "/api/projects" 로 매칭되는 걸 막는다.
     useSemicolonDelimiter: false,

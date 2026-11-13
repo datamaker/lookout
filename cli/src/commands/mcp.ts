@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { api, resolveProject, type IssueStatus } from '../api.js';
-import { describeIssue } from '../format.js';
+import { describeIssueForAgent, wrapUntrusted } from '../format.js';
 import { VERSION } from '../version.js';
 
 /**
@@ -12,6 +12,14 @@ import { VERSION } from '../version.js';
  * and triage them. Register with:
  *   claude mcp add --scope user lookout -- lookout mcp
  */
+
+/**
+ * 이벤트에서 온 값(제목, culprit, 메시지, payload 등)이 들어 있는 응답.
+ * 신뢰할 수 없는 데이터 블록으로 감싸 MCP 클라이언트(에이전트)가 지시로 읽지 않게 한다.
+ */
+function untrusted(data: unknown): { content: { type: 'text'; text: string }[] } {
+  return text(wrapUntrusted(typeof data === 'string' ? data : JSON.stringify(data, null, 2)));
+}
 
 function text(data: unknown): { content: { type: 'text'; text: string }[] } {
   return {
@@ -44,7 +52,7 @@ export async function mcpCommand(): Promise<void> {
     async ({ project, status, query, limit }) => {
       const p = await resolveProject(project);
       const res = await api.issues(p.id, { status: status as IssueStatus, q: query, limit });
-      return text({ project: p.slug, ...res });
+      return untrusted({ project: p.slug, ...res });
     },
   );
 
@@ -52,7 +60,7 @@ export async function mcpCommand(): Promise<void> {
     'get_issue',
     'Get full details of a lookout issue: metadata plus the latest event with stack trace, breadcrumbs, tags and request context, formatted as text.',
     { issue_id: z.number().int().describe('Issue id (the number shown by list_issues)') },
-    async ({ issue_id }) => text(describeIssue(await api.issue(issue_id))),
+    async ({ issue_id }) => text(describeIssueForAgent(await api.issue(issue_id))),
   );
 
   server.tool(
@@ -62,14 +70,14 @@ export async function mcpCommand(): Promise<void> {
       issue_id: z.number().int(),
       limit: z.number().int().min(1).max(200).optional(),
     },
-    async ({ issue_id, limit }) => text((await api.issueEvents(issue_id, limit ?? 20)).events),
+    async ({ issue_id, limit }) => untrusted((await api.issueEvents(issue_id, limit ?? 20)).events),
   );
 
   server.tool(
     'get_event',
     'Get the raw Sentry-format payload of a single event by event id (UUID from list_events).',
     { event_id: z.string() },
-    async ({ event_id }) => text(await api.event(event_id)),
+    async ({ event_id }) => untrusted(await api.event(event_id)),
   );
 
   server.tool(

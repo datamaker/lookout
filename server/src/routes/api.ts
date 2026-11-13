@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { baseUrl } from '../config.js';
 import { query } from '../db/pool.js';
 import { requireAdmin } from './auth.js';
+import { isAllowedWebhookUrl } from '../alerts/webhook.js';
 
 /**
  * Dashboard API. All routes require a logged-in user (JWT Bearer token from
@@ -58,6 +59,12 @@ export function registerApiRoutes(app: FastifyInstance): void {
     if (!requireAdmin(req, reply)) return reply;
     const id = parseInt((req.params as { id: string }).id, 10);
     const { name, webhookUrl } = (req.body ?? {}) as { name?: string; webhookUrl?: string | null };
+    // 웹훅은 허용된 호스트(기본 hooks.slack.com)만 저장한다 — 서버가 임의 주소로 POST 하지 않게.
+    if (webhookUrl && (typeof webhookUrl !== 'string' || !isAllowedWebhookUrl(webhookUrl))) {
+      return reply.code(400).send({
+        error: 'webhook URL must be an https://hooks.slack.com/... URL',
+      });
+    }
     const { rows } = await query(
       `UPDATE projects SET
          name = COALESCE($2, name),

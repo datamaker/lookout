@@ -76,7 +76,7 @@ Sentry.init({
       <div className="panel" style={{ padding: 16 }}>
         <p className="dim" style={{ marginTop: 0 }}>
           New issues and regressions are posted as Slack-compatible <code>{'{ text }'}</code>{' '}
-          JSON. Works with Slack incoming webhooks and most chat tools.
+          JSON. Must be a Slack incoming webhook (https://hooks.slack.com/…) unless the server allows other hosts.
         </p>
         <div className="field-row">
           <input

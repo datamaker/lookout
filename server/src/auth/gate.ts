@@ -52,7 +52,7 @@ export function isApiPath(rawUrl: string): boolean {
 }
 
 export function registerAuthGate(app: FastifyInstance): void {
-  // onRequest 에서 막는다 — 인증 안 된 요청은 본문(최대 20MB)을 파싱하기도 전에 끊는다.
+  // onRequest 에서 막는다 — 인증 안 된 요청은 본문을 파싱하기도 전에 끊는다.
   app.addHook('onRequest', async (req, reply) => {
     // 매칭된 라우트가 없으면 404 핸들러(정적 파일 / SPA 폴백)로만 간다. API 핸들러에는 닿지 않는다.
     if (req.is404) return;
