@@ -2,12 +2,15 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { baseUrl } from '../config.js';
 import { query } from '../db/pool.js';
-import { requireAdmin, requireUser } from './auth.js';
+import { requireAdmin } from './auth.js';
 
 /**
  * Dashboard API. All routes require a logged-in user (JWT Bearer token from
  * /api/auth/login); project create/update/delete additionally require the
  * admin role. Issue triage (resolve/ignore) is open to members.
+ *
+ * 로그인 검사는 여기서 하지 않는다. auth/gate.ts 의 전역 게이트가 매칭된 라우트
+ * 기준으로 막는다 (공개 목록에 없으면 전부 로그인 필요).
  */
 
 function dsnFor(projectId: number, publicKey: string): string {
@@ -24,15 +27,6 @@ function slugify(name: string): string {
 }
 
 export function registerApiRoutes(app: FastifyInstance): void {
-  app.addHook('preHandler', async (req, reply) => {
-    if (!req.url.startsWith('/api/')) return;
-    // Auth and user-management routes handle authorization themselves.
-    if (req.url.startsWith('/api/auth/') || req.url.startsWith('/api/users')) return;
-    // Ingest endpoints authenticate with the DSN key instead.
-    if (/^\/api\/\d+\/(envelope|store)\//.test(req.url)) return;
-    if (!(await requireUser(req, reply))) return reply;
-  });
-
   app.get('/api/projects', async () => {
     const { rows } = await query(
       `SELECT p.id, p.slug, p.name, p.public_key, p.webhook_url, p.created_at,

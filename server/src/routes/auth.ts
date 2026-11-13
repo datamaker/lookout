@@ -39,6 +39,8 @@ function validCredentials(email?: string, password?: string, name?: string): str
 }
 
 export async function requireUser(req: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+  // 전역 게이트(auth/gate.ts)가 이미 확인한 요청이면 DB 를 다시 조회하지 않는다.
+  if (req.user) return true;
   const header = req.headers.authorization ?? '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   req.user = token ? await verifyToken(token) : null;
